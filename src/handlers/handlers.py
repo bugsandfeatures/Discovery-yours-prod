@@ -122,14 +122,13 @@ async def make_post(call: CallbackQuery):
     )
     import ast
 
-    var = str((post_data[0][-1])).replace("'_': 'MessageEntity', ", "")
-    var = ast.literal_eval(var)
-    print(var)
+    # var = str((post_data[0][-1])).replace("'_': 'MessageEntity', ", "")
+    # var = ast.literal_eval(var)
+    # print(var)
 
     if type_of_post == 'text':
         await bot.send_message(call.message.chat.id,
                                post_data[0][3],
-                               entities=[{"type": "custom_emoji", "offset": 0, "length": 2, "custom_emoji_id": "5363911199148744794"}],
                                reply_markup=react_keyboard)
 
     if type_of_post == 'photo':
@@ -148,8 +147,7 @@ async def make_post(call: CallbackQuery):
             mg = MediaGroup()
             for i in range(len(group_data)):
                 mg.attach_photo(group_data[i][7],
-                                caption=group_data[i][3],
-                                caption_entities=ast.literal_eval(group_data[0][-1]))
+                                caption=group_data[i][3])
 
             await bot.send_media_group(call.message.chat.id, mg)
             await bot.send_message(call.message.chat.id, 'Реакции', reply_markup=react_keyboard)
@@ -158,7 +156,6 @@ async def make_post(call: CallbackQuery):
         if post_data[0][12] is None:
             await bot.send_document(call.message.chat.id,
                                     post_data[0][7],
-                                    caption_entities=var,
                                     reply_markup=react_keyboard)
 
         else:
@@ -170,8 +167,7 @@ async def make_post(call: CallbackQuery):
             mg = MediaGroup()
             for i in range(len(group_data)):
                 mg.attach_document(group_data[i][7],
-                                   caption=post_data[i][3],
-                                   caption_entities=ast.literal_eval(group_data[0][-1]))
+                                   caption=post_data[i][3])
 
             await bot.send_media_group(call.message.chat.id, mg)
             await bot.send_message(call.message.chat.id, 'Реакции', reply_markup=react_keyboard)
