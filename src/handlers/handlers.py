@@ -103,9 +103,8 @@ async def make_post(call: CallbackQuery):
     cursor.execute("""SELECT post_id FROM posts WHERE category_id=(%s)""",
                    (category_id,))
     data = cursor.fetchall()
-    # ids = [i[0] for i in data]
-    # rand_post_id = choice(ids)
-    rand_post_id = 12
+    ids = [i[0] for i in data]
+    rand_post_id = choice(ids)
     cursor.execute("""SELECT * FROM posts WHERE post_id=(%s)""", [rand_post_id])
     post_data = cursor.fetchall()
     type_of_post = post_data[0][1]
