@@ -16,6 +16,10 @@ class DataBase:
         return self.cursor.execute("""UPDATE users SET interests=(%s) WHERE user_id=(%s)""",
                                    (interests, user_id))
 
+    async def update_reacts(self, likes, dislikes, ads, post_id):
+        return self.cursor.execute("""UPDATE posts SET likes=(%s), dislikes=(%s), ads=(%s) WHERE post_id=(%s)""",
+                                   (likes, dislikes, ads, post_id))
+
 
 
 
