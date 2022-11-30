@@ -76,8 +76,9 @@ async def registration(call: CallbackQuery):
 @dp.poll_answer_handler()
 async def handle_poll_answer(poll_answer: PollAnswer):
     user_id = poll_answer['user']['id']
-    interests = str(poll_answer['option_ids'])
-
+    interests = [(i+1) for i in poll_answer['option_ids']]
+    interests = str(interests)
+    print(interests)
     await db.add_interests(interests, user_id)
 
     await bot.send_message(poll_answer.user.id, 'Готово!', reply_markup=start_keyboard1)
@@ -155,6 +156,7 @@ async def make_post(call: CallbackQuery):
         if post_data[0][12] is None:
             await bot.send_document(call.message.chat.id,
                                     post_data[0][7],
+                                    caption=post_data[0][3],
                                     reply_markup=react_keyboard)
 
         else:
@@ -166,7 +168,7 @@ async def make_post(call: CallbackQuery):
             mg = MediaGroup()
             for i in range(len(group_data)):
                 mg.attach_document(group_data[i][7],
-                                   caption=post_data[i][3])
+                                   caption=group_data[i][3])
 
             await bot.send_media_group(call.message.chat.id, mg)
             await bot.send_message(call.message.chat.id, 'Реакции', reply_markup=react_keyboard)
