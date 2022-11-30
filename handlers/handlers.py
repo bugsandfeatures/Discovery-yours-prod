@@ -5,11 +5,11 @@ from aiogram.dispatcher.filters import Command
 import json
 from random import choice
 
-from src.bot import dp, bot
-from src.config import Config
-from src.config import DBConfig
-from src.services import DataBase
-from src.keyboards import start_keyboard, cb, start_keyboard1
+from bot import dp, bot
+from config import Config
+from config import DBConfig
+from services import DataBase
+from keyboards import start_keyboard, cb, start_keyboard1
 
 db = DataBase(DBConfig.user, DBConfig.password, DBConfig.host, DBConfig.port, DBConfig.database)
 

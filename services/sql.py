@@ -1,4 +1,4 @@
-from src.config import Config
+from config import Config
 import mysql.connector
 
 class DataBase:
