@@ -1,9 +1,12 @@
+import os
+
 from aiogram.types import Message, PollAnswer, CallbackQuery, MediaGroup, InputMediaPhoto, InputFile, \
     InlineKeyboardMarkup, InlineKeyboardButton, MessageEntity
 from aiogram.dispatcher.filters import Command
 
 import json
 from random import choice
+import datetime
 
 from bot import dp, bot
 from config import Config
@@ -78,7 +81,6 @@ async def handle_poll_answer(poll_answer: PollAnswer):
     user_id = poll_answer['user']['id']
     interests = [(i+1) for i in poll_answer['option_ids']]
     interests = str(interests)
-    print(interests)
     await db.add_interests(interests, user_id)
 
     await bot.send_message(poll_answer.user.id, 'Готово!', reply_markup=start_keyboard1)
@@ -87,6 +89,7 @@ async def handle_poll_answer(poll_answer: PollAnswer):
 async def wall(call: CallbackQuery):
     await make_post(call)
 
+# 1 - лайк, 2 - дизлайк, 3 - реклама
 async def make_post(call: CallbackQuery):
     import mysql.connector
     connect = mysql.connector.connect(user=DBConfig.user,
@@ -96,17 +99,26 @@ async def make_post(call: CallbackQuery):
                                       database=DBConfig.database)
 
     cursor = connect.cursor()
-    cursor.execute("""SELECT * FROM users WHERE user_id=(%s)""",
-                   (call.message.chat.id,))
+    try:
+        cursor.execute("""SELECT * FROM users WHERE user_id=(%s)""",
+                       (call.message.chat.id,))
+    except Exception as e:
+        print(e)
     interests = cursor.fetchall()[0][3]
     category_id = choice([1, 2, 3, 4, 5, 6, 7, 8]) if interests == 'all'\
         else choice([int(i) for i in interests if i in '12345678'])
-    cursor.execute("""SELECT post_id FROM posts WHERE category_id=(%s)""",
-                   (category_id,))
+    try:
+        cursor.execute("""SELECT post_id FROM posts WHERE category_id=(%s)""",
+                       (category_id,))
+    except Exception as e:
+        print(e)
     data = cursor.fetchall()
     ids = [i[0] for i in data]
     rand_post_id = choice(ids)
-    cursor.execute("""SELECT * FROM posts WHERE post_id=(%s)""", [rand_post_id])
+    try:
+        cursor.execute("""SELECT * FROM posts WHERE post_id=(%s)""", [rand_post_id])
+    except Exception as e:
+        print(e)
     post_data = cursor.fetchall()
     type_of_post = post_data[0][1]
     react_keyboard = InlineKeyboardMarkup(
@@ -141,8 +153,11 @@ async def make_post(call: CallbackQuery):
         else:
             username = post_data[0][5]
             media_group_id = post_data[0][12]
-            cursor.execute("""SELECT * FROM posts WHERE username=(%s) AND media_group_id=(%s)""",
-                           [username, media_group_id])
+            try:
+                cursor.execute("""SELECT * FROM posts WHERE username=(%s) AND media_group_id=(%s)""",
+                               [username, media_group_id])
+            except Exception as e:
+                print(e)
             group_data = cursor.fetchall()
             mg = MediaGroup()
             for i in range(len(group_data)):
@@ -150,7 +165,7 @@ async def make_post(call: CallbackQuery):
                                 caption=group_data[i][3])
 
             await bot.send_media_group(call.message.chat.id, mg)
-            await bot.send_message(call.message.chat.id, 'Реакции', reply_markup=react_keyboard)
+            await bot.send_message(call.message.chat.id, group_data[0][3], reply_markup=react_keyboard)
 
     if type_of_post == 'document':
         if post_data[0][12] is None:
@@ -162,8 +177,11 @@ async def make_post(call: CallbackQuery):
         else:
             username = post_data[0][5]
             media_group_id = post_data[0][12]
-            cursor.execute("""SELECT * FROM posts WHERE username=(%s) AND media_group_id=(%s)""",
-                           [username, media_group_id])
+            try:
+                cursor.execute("""SELECT * FROM posts WHERE username=(%s) AND media_group_id=(%s)""",
+                               [username, media_group_id])
+            except Exception as e:
+                print(e)
             group_data = cursor.fetchall()
             mg = MediaGroup()
             for i in range(len(group_data)):
@@ -171,7 +189,7 @@ async def make_post(call: CallbackQuery):
                                    caption=group_data[i][3])
 
             await bot.send_media_group(call.message.chat.id, mg)
-            await bot.send_message(call.message.chat.id, 'Реакции', reply_markup=react_keyboard)
+            await bot.send_message(call.message.chat.id, group_data[0][3], reply_markup=react_keyboard)
 
     if type_of_post == 'web_page':
         pass
@@ -192,14 +210,20 @@ async def like_post(call: CallbackQuery, callback_data: dict):
     likes = data[0][0]
     dislikes = data[0][1]
     ads = data[0][2]
-    await db.update_reacts(likes+1, dislikes, ads, post_id)
+    try:
+        await db.update_reacts(likes+1, dislikes, ads, post_id)
+        await db.insert_reacts_like(call.message.chat.id, post_id)
+    except Exception as e:
+        print(e)
     connect.commit()
     cursor.close()
     connect.close()
 
     await bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
-
-    await make_post(call)
+    try:
+        await make_post(call)
+    except Exception as e:
+        print(e)
 
 @dp.callback_query_handler(cb.filter(action='dislike'))
 async def dislike_post(call: CallbackQuery, callback_data: dict):
@@ -217,22 +241,35 @@ async def dislike_post(call: CallbackQuery, callback_data: dict):
     likes = data[0][0]
     dislikes = data[0][1]
     ads = data[0][2]
-    await db.update_reacts(likes, dislikes+1, ads, post_id)
+    try:
+        await db.update_reacts(likes, dislikes+1, ads, post_id)
+        await db.insert_reacts_dislike(call.message.chat.id, post_id)
+    except Exception as e:
+        print(e)
     connect.commit()
     cursor.close()
     connect.close()
 
     await bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
-
-    await make_post(call)
+    try:
+        await make_post(call)
+    except Exception as e:
+        print(e)
 
 @dp.callback_query_handler(cb.filter(action='ads'))
 async def ads_post(call: CallbackQuery, callback_data: dict):
     post_id = callback_data['post_id']
     await bot.send_message(call.message.chat.id, 'Спасибо, информация передана админам!')
+    try:
+        await db.insert_reacts_ads(call.message.chat.id, post_id)
+    except Exception as e:
+        print(e)
     # 461656218,
     for i in [888899980]:
         await bot.send_message(i, f'Пост с id: {post_id} помечен, как реклама!')
 
-    await bot.delete_message(call.message.chat.id, call.message.message_id)
-    await make_post(call)
+    try:
+        await bot.delete_message(call.message.chat.id, call.message.message_id)
+        await make_post(call)
+    except Exception as e:
+        print(e)
